@@ -1,0 +1,25 @@
+http {
+    # Ограничение: максимум 10 запросов в минуту от одного IP
+    limit_req_zone $binary_remote_addr zone=by_ip:10m rate=10r/m;
+
+    # Настройка upstream для балансировки нагрузки
+    upstream backend_servers {
+        server backend1.example.com;
+        server backend2.example.com;
+        server backend3.example.com;
+    }
+
+    server {
+        listen 80;
+
+        location / {
+            # Применяем ограничение с небольшим burst для пиковых нагрузок
+            limit_req zone=by_ip burst=3 nodelay;
+            
+            proxy_pass http://backend_servers;
+        }
+    }
+    
+    # Возвращать код 429 при превышении лимита
+    limit_req_status 429;
+}
